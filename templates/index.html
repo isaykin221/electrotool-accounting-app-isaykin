@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Учёт электроинструмента</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <main class="page">
+        <section class="hero">
+            <div>
+                <p class="eyebrow">Тема 7</p>
+                <h1>Система учёта электроинструмента</h1>
+                <p>Приложение помогает хранить инструменты, отслеживать выдачу сотрудникам и фиксировать ремонт.</p>
+            </div>
+            <div class="stats">
+                <article>
+                    <span>{{ stats.total }}</span>
+                    <p>всего</p>
+                </article>
+                <article>
+                    <span>{{ stats.in_stock }}</span>
+                    <p>на складе</p>
+                </article>
+                <article>
+                    <span>{{ stats.issued }}</span>
+                    <p>выдано</p>
+                </article>
+                <article>
+                    <span>{{ stats.repair }}</span>
+                    <p>в ремонте</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="grid">
+            <form class="card form-card" action="{{ url_for('create_tool') }}" method="post">
+                <h2>Добавить инструмент</h2>
+                <label>
+                    Инвентарный номер
+                    <input name="inventory_number" placeholder="EL-004" required>
+                </label>
+                <label>
+                    Название
+                    <input name="name" placeholder="Шуруповёрт" required>
+                </label>
+                <label>
+                    Категория
+                    <input name="category" placeholder="дрель, пила, тестер" required>
+                </label>
+                <label>
+                    Место хранения
+                    <input name="location" placeholder="склад 1" required>
+                </label>
+                <label>
+                    Состояние
+                    <input name="condition" value="исправен" required>
+                </label>
+                <button type="submit">Добавить</button>
+            </form>
+
+            <section class="card">
+                <h2>Фильтр</h2>
+                <form class="filter" action="{{ url_for('index') }}" method="get">
+                    <input name="search" value="{{ search }}" placeholder="Поиск по названию или номеру">
+                    <select name="status">
+                        <option value="" {% if not selected_status %}selected{% endif %}>Все статусы</option>
+                        <option value="in_stock" {% if selected_status == 'in_stock' %}selected{% endif %}>На складе</option>
+                        <option value="issued" {% if selected_status == 'issued' %}selected{% endif %}>Выдано</option>
+                        <option value="repair" {% if selected_status == 'repair' %}selected{% endif %}>В ремонте</option>
+                    </select>
+                    <button type="submit">Показать</button>
+                </form>
+            </section>
+        </section>
+
+        <section class="card">
+            <h2>Инструменты</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Инв. номер</th>
+                            <th>Название</th>
+                            <th>Категория</th>
+                            <th>Статус</th>
+                            <th>Ответственный</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tool in tools %}
+                            <tr>
+                                <td>{{ tool.inventory_number }}</td>
+                                <td>
+                                    <strong>{{ tool.name }}</strong>
+                                    <span>{{ tool.location }} · {{ tool.condition }}</span>
+                                </td>
+                                <td>{{ tool.category }}</td>
+                                <td><span class="badge badge-{{ tool.status }}">{{ tool.status }}</span></td>
+                                <td>{{ tool.responsible or 'не назначен' }}</td>
+                                <td class="actions">
+                                    {% if tool.status == 'in_stock' %}
+                                        <form action="{{ url_for('issue', tool_id=tool.id) }}" method="post">
+                                            <input name="employee" placeholder="ФИО" required>
+                                            <input name="planned_return_at" type="date">
+                                            <button type="submit">Выдать</button>
+                                        </form>
+                                        <form action="{{ url_for('repair', tool_id=tool.id) }}" method="post">
+                                            <input name="description" placeholder="Причина ремонта" required>
+                                            <input name="cost" type="number" min="0" step="0.01" placeholder="Цена">
+                                            <button type="submit" class="secondary">В ремонт</button>
+                                        </form>
+                                    {% elif tool.status == 'issued' %}
+                                        <form action="{{ url_for('return_item', tool_id=tool.id) }}" method="post">
+                                            <button type="submit">Вернуть</button>
+                                        </form>
+                                    {% else %}
+                                        <span class="muted">Ожидает завершения ремонта</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="empty">Инструменты не найдены</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Журнал ремонта</h2>
+            <div class="repair-list">
+                {% for item in maintenance %}
+                    <article>
+                        <strong>{{ item.inventory_number }} · {{ item.name }}</strong>
+                        <p>{{ item.description }}</p>
+                        <span>{{ item.started_at }} · {{ item.cost }} руб. · {{ item.status }}</span>
+                    </article>
+                {% else %}
+                    <p class="muted">Записей о ремонте пока нет.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </main>
+</body>
+</html>
