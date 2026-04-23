@@ -25,7 +25,6 @@
 electrotool-accounting-app/
 ├── app.py
 ├── database.py
-├── GITHUB_UPLOAD.md
 ├── requirements.txt
 ├── schema.sql
 ├── electrotools.db
